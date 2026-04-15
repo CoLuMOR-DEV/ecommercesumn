@@ -1,113 +1,74 @@
-# Valorant-Style E-Commerce Shop (XAMPP + PHP + MySQL)
+# Night Market — Valorant-Style E-Commerce Demo
 
-This project is a starter blueprint for building a **Valorant Shop-inspired e-commerce website** with:
+A Valorant-inspired e-commerce storefront with:
+- **Aesthetic shop UI** (dark neon/red theme)
+- **Admin panel** to add/edit catalog content
+- **Bundle support** and **shop rotation** behavior
+- **Fake checkout flow** (`PAID_FAKE` orders)
+- Compatible for **Vercel deployment** or local static hosting
 
-- XAMPP (Apache + PHP + MySQL)
-- Design system inspired by Valorant store layout
-- Database with:
-  - Basic SQL tables/queries
-  - Stored Procedure
-  - Stored Function
-- Admin Panel
-- Fake checkout flow (no real payment)
-- Shop rotation and bundles
-- Ability to change shop items and upload pictures
+> This is intentionally a front-end demo app using browser storage (`localStorage`) so it runs instantly.
 
 ---
 
-## 1) Recommended Stack
+## Pages
 
-- **Backend:** PHP 8+ (XAMPP)
-- **Database:** MySQL 8+
-- **Frontend:** HTML/CSS/JS (or Bootstrap/Tailwind)
-- **Assets:** Local image uploads in `/public/uploads`
+- `/` → Shop page (`index.html`)
+- `/admin` → Admin panel (`admin.html`)
 
 ---
 
-## 2) Core Features
+## Features implemented
 
-### Customer Side
-- View rotating shop (daily/weekly style)
-- View featured bundles and individual items
-- Add items to cart
-- Fake checkout (marks order as `PAID_FAKE`)
-- View order history
+### Shop
+- Displays a rotating list of products based on rotation settings.
+- Displays one featured rotating bundle.
+- Add products/bundle to cart.
+- Fake checkout creates an order record in local storage.
 
 ### Admin Panel
-- Create/edit/delete products
-- Upload/change product images
-- Create bundles (set discount)
-- Control shop rotation dates
-- Enable/disable items from current shop
+- Add product (name, price, rarity, image URL)
+- Create bundle (name, discount, image URL, product IDs)
+- Configure rotation length + product count
+- Delete products and bundles
+- View fake checkout order history
 
 ---
 
-## 3) Database
+## Local development
 
-Use the SQL in `database/init.sql` to create all base tables and seed data.
+Because this is static HTML/CSS/JS, any local server works.
 
-### Includes
-- Basic tables (users, products, bundles, rotations, orders)
-- **Stored Procedure:** `sp_rotate_shop_items` to auto-enable current rotation
-- **Stored Function:** `fn_bundle_price` to calculate discounted bundle total
-
----
-
-## 4) Suggested Project Structure
-
+### Option A (Python)
+```bash
+python -m http.server 4173
 ```
-/public
-  index.php
-  shop.php
-  checkout.php
-  /uploads
-/admin
-  index.php
-  products.php
-  bundles.php
-  rotation.php
-/config
-  db.php
-/database
-  init.sql
-/src
-  ProductRepository.php
-  BundleService.php
-  RotationService.php
-```
+Then open:
+- `http://localhost:4173/`
+- `http://localhost:4173/admin.html`
+
+### Option B (VS Code Live Server)
+Serve root folder and open `index.html`.
 
 ---
 
-## 5) XAMPP Setup Steps
+## Vercel deployment
 
-1. Install XAMPP and start **Apache** and **MySQL**.
-2. Put this project in `htdocs` (or create a virtual host).
-3. Create DB:
-   - DB name: `valorant_shop`
-4. Import `database/init.sql` using phpMyAdmin.
-5. Update `/config/db.php` credentials.
-6. Open browser:
-   - `http://localhost/ecommercesumn/public`
-   - Admin: `http://localhost/ecommercesumn/admin`
+This repo includes `vercel.json` rewrites:
+- `/` → `index.html`
+- `/admin` → `admin.html`
 
----
-
-## 6) Fake Checkout Rules
-
-- No real payment gateway.
-- At checkout:
-  - Create `orders` record
-  - Create `order_items` records
-  - Set status to `PAID_FAKE`
-  - Save timestamp and total amount
+Deploy as a static project:
+1. Import repo into Vercel.
+2. Keep default static settings.
+3. Deploy.
 
 ---
 
-## 7) Next Build Tasks
+## Database plan (for next backend step)
 
-1. Build login for admin and customers.
-2. Implement product + bundle CRUD pages.
-3. Build shop page using active rotation.
-4. Add cart + fake checkout.
-5. Add order management in admin.
-6. Polish Valorant-style UI (cards, gradients, neon accents).
+The file `database/init.sql` contains a MySQL/XAMPP schema + seed data + stored function/procedure:
+- `fn_bundle_price(p_bundle_id)`
+- `sp_rotate_shop_items()`
+
+Use this when you upgrade this demo to a PHP/MySQL backend.
