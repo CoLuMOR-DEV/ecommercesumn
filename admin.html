@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel // Night Market</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Teko:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body data-page="admin">
+    <header class="topbar">
+      <div class="brand">ADMIN CONSOLE</div>
+      <nav class="nav-actions">
+        <a href="./index.html" class="ghost-btn">View Shop</a>
+        <button id="logoutAdmin" class="ghost-btn hidden">Logout</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section id="adminLoginCard" class="admin-card login-card">
+        <h2>Admin Login</h2>
+        <p class="subtle">Use credentials: <code>admin</code> / <code>admin123</code></p>
+        <form id="adminLoginForm" class="form-grid">
+          <input name="username" placeholder="Username" required />
+          <input name="password" type="password" placeholder="Password" required />
+          <button class="cta-btn" type="submit">Sign In</button>
+        </form>
+      </section>
+
+      <section id="adminApp" class="admin-layout hidden">
+        <section class="admin-card">
+          <h2>Add Product</h2>
+          <form id="productForm" class="form-grid">
+            <input name="name" placeholder="Item name" required />
+            <input name="price" type="number" step="1" min="0" placeholder="Price in VP" required />
+            <input name="image" placeholder="Transparent PNG URL" required />
+            <select name="rarity">
+              <option>SELECT</option>
+              <option>DELUXE</option>
+              <option>PREMIUM</option>
+              <option>EXCLUSIVE</option>
+              <option>ULTRA</option>
+            </select>
+            <button class="cta-btn" type="submit">Add Product</button>
+          </form>
+        </section>
+
+        <section class="admin-card">
+          <h2>Create Bundle</h2>
+          <form id="bundleForm" class="form-grid">
+            <input name="name" placeholder="Bundle name" required />
+            <input name="discount" type="number" min="0" max="90" placeholder="Discount %" required />
+            <input name="image" placeholder="Bundle banner URL" required />
+            <input name="productIds" placeholder="Product IDs comma-separated (e.g. 1,2)" required />
+            <button class="cta-btn" type="submit">Create Bundle</button>
+          </form>
+        </section>
+
+        <section class="admin-card">
+          <h2>Rotation Settings</h2>
+          <form id="settingsForm" class="form-grid">
+            <label class="inline-field"
+              >Products per rotation
+              <input name="rotationSize" type="number" min="1" max="20" required />
+            </label>
+            <label class="inline-field"
+              >Rotation length (days)
+              <input name="rotationDays" type="number" min="1" max="30" required />
+            </label>
+            <button class="cta-btn" type="submit">Save Rotation</button>
+          </form>
+        </section>
+
+        <section class="admin-card">
+          <h2>Catalog</h2>
+          <div id="adminProductList" class="stack-list"></div>
+        </section>
+
+        <section class="admin-card">
+          <h2>Bundles</h2>
+          <div id="adminBundleList" class="stack-list"></div>
+        </section>
+
+        <section class="admin-card">
+          <h2>Orders (Fake Checkout)</h2>
+          <div id="adminOrders" class="stack-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

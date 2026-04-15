@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Night Market // Valorant-Style Shop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Teko:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body data-page="shop">
+    <header class="topbar">
+      <div class="brand-row">
+        <a class="ghost-link" href="#">← BACK</a>
+        <div class="brand">STORE</div>
+      </div>
+      <nav class="nav-actions">
+        <a href="./admin.html" class="ghost-btn">Admin Panel</a>
+        <div class="vp-pill">VP <strong id="vpBalance">0</strong></div>
+        <button id="openCart" class="cta-btn">Checkout</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section class="featured-banner">
+        <div class="banner-copy">
+          <p class="eyebrow">FEATURED</p>
+          <h1 id="bundleName">RUN IT BACK COLLECTION</h1>
+          <p id="bundleInfo" class="subtle"></p>
+          <div class="banner-price-row">
+            <span class="vp-pill large">VP <strong id="bundlePrice">0</strong></span>
+            <button id="addFeaturedBundle" class="cta-btn">Buy Bundle</button>
+          </div>
+        </div>
+        <div class="banner-guns" id="bundleWeapons"></div>
+      </section>
+
+      <section class="offers-head">
+        <h2>DAILY OFFERS</h2>
+        <span id="rotationRange" class="subtle"></span>
+      </section>
+
+      <section id="productList" class="offer-grid"></section>
+    </main>
+
+    <aside id="cartDrawer" class="cart-drawer hidden">
+      <div class="drawer-head">
+        <h3>Checkout</h3>
+        <button id="closeCart" class="icon-btn">✕</button>
+      </div>
+
+      <div class="wallet-box">
+        <p class="eyebrow">FAKE VP TOP UP</p>
+        <div class="wallet-row">
+          <select id="topupAmount">
+            <option value="475">475 VP</option>
+            <option value="1000">1,000 VP</option>
+            <option value="2050">2,050 VP</option>
+            <option value="3650">3,650 VP</option>
+            <option value="5350">5,350 VP</option>
+          </select>
+          <select id="topupMethod">
+            <option value="card">Credit Card</option>
+            <option value="paypal">PayPal</option>
+            <option value="gcash">GCash</option>
+          </select>
+          <button id="topupBtn" class="ghost-btn">Top Up</button>
+        </div>
+      </div>
+
+      <div id="cartItems" class="cart-items"></div>
+
+      <div class="cart-footer">
+        <label class="inline-field">Payment Method
+          <select id="purchaseMethod">
+            <option value="vp_wallet">VP Wallet</option>
+            <option value="card">Credit Card (Simulated)</option>
+            <option value="paypal">PayPal (Simulated)</option>
+          </select>
+        </label>
+        <div class="row-between"><span>Total</span><strong id="cartTotal">0 VP</strong></div>
+        <button id="checkoutBtn" class="cta-btn w-full">Complete Purchase</button>
+        <p class="subtle tiny">This is a fake checkout demo; no real payments are processed.</p>
+      </div>
+    </aside>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
