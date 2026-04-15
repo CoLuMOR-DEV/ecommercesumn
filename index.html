@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Night Market // Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Teko:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body data-page="shop">
+    <header class="topbar fade-in">
+      <div class="brand-row">
+        <a class="ghost-link" href="#">← BACK</a>
+        <div class="brand">STORE</div>
+      </div>
+      <nav class="nav-actions">
+        <a href="./admin.html" class="ghost-btn">Admin Panel</a>
+        <div class="vp-pill"><img src="./src/vp-logo.svg" alt="VP" /> <strong id="vpBalance">0</strong></div>
+        <button id="openCart" class="cta-btn">Wallet & Checkout</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section class="featured-banner fade-in-up">
+        <div class="banner-copy">
+          <p class="eyebrow">FEATURED BUNDLE</p>
+          <h1 id="bundleName">RUN IT BACK</h1>
+          <p id="bundleInfo" class="subtle"></p>
+          <p class="timer-label">Bundle refresh in <span id="bundleTimer">--:--:--</span></p>
+          <div class="banner-price-row">
+            <span class="vp-pill large"><img src="./src/vp-logo.svg" alt="VP" /> <strong id="bundlePrice">0</strong></span>
+            <button id="addFeaturedBundle" class="cta-btn">Add Bundle</button>
+          </div>
+        </div>
+        <div class="banner-guns" id="bundleWeapons"></div>
+      </section>
+
+      <section class="offers-head fade-in-up delay-1">
+        <h2>DAILY OFFERS</h2>
+        <div class="timer-wrap">
+          <span id="rotationRange" class="subtle"></span>
+          <strong id="shopTimer">--:--:--</strong>
+        </div>
+      </section>
+
+      <section id="productList" class="offer-grid"></section>
+    </main>
+
+    <aside id="cartDrawer" class="cart-drawer hidden">
+      <div class="drawer-head">
+        <h3>Wallet & Checkout</h3>
+        <button id="closeCart" class="icon-btn">✕</button>
+      </div>
+
+      <div class="checkout-tabs">
+        <button class="tab-btn active" data-tab="topup">Top Up VP</button>
+        <button class="tab-btn" data-tab="checkout">Checkout</button>
+      </div>
+
+      <div id="topupPanel" class="panel active">
+        <div class="wallet-box">
+          <p class="eyebrow">VP BALANCE</p>
+          <p class="wallet-big"><img src="./src/vp-logo.svg" alt="VP" /> <strong id="walletPanelBalance">0</strong></p>
+          <div class="wallet-row">
+            <select id="topupAmount">
+              <option value="475">475 VP</option>
+              <option value="1000">1,000 VP</option>
+              <option value="2050">2,050 VP</option>
+              <option value="3650">3,650 VP</option>
+              <option value="5350">5,350 VP</option>
+            </select>
+            <select id="topupMethod">
+              <option value="card">Credit Card</option>
+              <option value="paypal">PayPal</option>
+              <option value="gcash">GCash</option>
+            </select>
+            <button id="topupBtn" class="ghost-btn">Confirm Top Up</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="checkoutPanel" class="panel">
+        <div id="cartItems" class="cart-items"></div>
+        <div class="cart-footer">
+          <label class="inline-field">Payment Method
+            <select id="purchaseMethod">
+              <option value="vp_wallet">VP Wallet</option>
+              <option value="card">Credit Card</option>
+              <option value="paypal">PayPal</option>
+            </select>
+          </label>
+          <div class="row-between"><span>Total</span><strong id="cartTotal">0 VP</strong></div>
+          <button id="checkoutBtn" class="cta-btn w-full">Complete Purchase</button>
+        </div>
+      </div>
+    </aside>
+
+    <div id="inspectModal" class="modal hidden">
+      <div class="modal-content">
+        <button id="closeInspect" class="icon-btn modal-close">✕</button>
+        <div class="inspect-main">
+          <img id="inspectImage" src="" alt="Skin" />
+          <div>
+            <h3 id="inspectTitle"></h3>
+            <p id="inspectPrice" class="subtle"></p>
+            <div id="upgradeList" class="upgrade-list"></div>
+          </div>
+        </div>
+        <div class="video-wrap">
+          <video id="upgradeVideo" controls playsinline></video>
+        </div>
+      </div>
+    </div>
+
+    <audio id="uiSound"></audio>
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
