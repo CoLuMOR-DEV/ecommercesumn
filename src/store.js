@@ -1,6 +1,13 @@
-const KEY = "valorant_shop_state_v1";
+const KEY = "valorant_shop_state_v2";
 
 const seed = {
+  admin: {
+    username: "admin",
+    password: "admin123",
+  },
+  wallet: {
+    vpBalance: 4427,
+  },
   settings: {
     rotationSize: 4,
     rotationDays: 1,
@@ -8,47 +15,61 @@ const seed = {
   products: [
     {
       id: 1,
-      name: "Prime Vandal",
-      price: 17.99,
+      name: "Storm Maw Judge",
+      price: 875,
       rarity: "PREMIUM",
-      image: "https://images.unsplash.com/photo-1633545492787-cf4c8e9e6f83?auto=format&fit=crop&w=900&q=80",
+      image:
+        "https://media.valorant-api.com/weaponskins/309743ac-4288-11dc-d563-88844caa2c4d/displayicon.png",
     },
     {
       id: 2,
-      name: "Reaver Operator",
-      price: 19.99,
-      rarity: "PREMIUM",
-      image: "https://images.unsplash.com/photo-1603481588273-2f908a9a7a1b?auto=format&fit=crop&w=900&q=80",
+      name: "Blades of Primordia",
+      price: 4350,
+      rarity: "EXCLUSIVE",
+      image:
+        "https://media.valorant-api.com/weaponskins/3e633a9a-482a-30fb-90da-059ff6cd400b/displayicon.png",
     },
     {
       id: 3,
-      name: "Ion Sheriff",
-      price: 12.99,
-      rarity: "DELUXE",
-      image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=900&q=80",
+      name: "Convex Sheriff",
+      price: 875,
+      rarity: "SELECT",
+      image:
+        "https://media.valorant-api.com/weaponskins/e8fd8fc3-40ce-3ed1-235a-1c8d9654874f/displayicon.png",
     },
     {
       id: 4,
-      name: "Elderflame Knife",
-      price: 24.99,
+      name: "Bolt Knife",
+      price: 4350,
       rarity: "EXCLUSIVE",
-      image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=900&q=80",
+      image:
+        "https://media.valorant-api.com/weaponskins/ff4bc096-4e6c-b67a-296a-5e814e4c0274/displayicon.png",
     },
     {
       id: 5,
-      name: "Spectrum Phantom",
-      price: 21.99,
+      name: "Neo Frontier Odin",
+      price: 1775,
+      rarity: "PREMIUM",
+      image:
+        "https://media.valorant-api.com/weaponskins/bd647d56-4542-19cd-e1ed-4fb429c78cf9/displayicon.png",
+    },
+    {
+      id: 6,
+      name: "Glitchpop Odin",
+      price: 2175,
       rarity: "ULTRA",
-      image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=900&q=80",
+      image:
+        "https://media.valorant-api.com/weaponskins/97af88e4-4176-9fa3-4a26-57919443dab7/displayicon.png",
     },
   ],
   bundles: [
     {
       id: 1,
-      name: "Prime Collection",
-      discount: 15,
-      image: "https://images.unsplash.com/photo-1542751371-29b74cdd0b60?auto=format&fit=crop&w=900&q=80",
-      items: [1, 2, 3],
+      name: "Run It Back: Lunar",
+      discount: 20,
+      image:
+        "https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt5c94f47ca632a0f6/67a7be16f9679130d4ffbe74/1920x1080_V25A2_Act2_Battlepass.jpg",
+      items: [1, 2, 3, 4],
     },
   ],
   cart: [],
@@ -73,20 +94,15 @@ export function saveState(next) {
   localStorage.setItem(KEY, JSON.stringify(next));
 }
 
-export function resetState() {
-  localStorage.setItem(KEY, JSON.stringify(seed));
-}
-
 export function getRotationProducts(state) {
   const { products, settings } = state;
   if (!products.length) return [];
 
   const msPerDay = 1000 * 60 * 60 * 24;
-  const epochDays = Math.floor(Date.now() / msPerDay);
   const windowSize = settings.rotationDays * msPerDay;
   const cycle = Math.floor(Date.now() / windowSize);
 
-  const start = (cycle + epochDays) % products.length;
+  const start = cycle % products.length;
   const selected = [];
   for (let i = 0; i < Math.min(settings.rotationSize, products.length); i += 1) {
     selected.push(products[(start + i) % products.length]);
@@ -103,5 +119,5 @@ export function getFeaturedBundle(state) {
 export function bundlePrice(state, bundle) {
   const items = state.products.filter((p) => bundle.items.includes(p.id));
   const sum = items.reduce((acc, i) => acc + i.price, 0);
-  return Number((sum * (1 - bundle.discount / 100)).toFixed(2));
+  return Math.round(sum * (1 - bundle.discount / 100));
 }

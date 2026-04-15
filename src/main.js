@@ -1,16 +1,11 @@
-import {
-  bundlePrice,
-  getFeaturedBundle,
-  getRotationProducts,
-  getState,
-  saveState,
-} from "./store.js";
+import { bundlePrice, getFeaturedBundle, getRotationProducts, getState, saveState } from "./store.js";
 
 const page = document.body.dataset.page;
 const $ = (sel) => document.querySelector(sel);
+const ADMIN_SESSION_KEY = "valorant_admin_session";
 
-function money(value) {
-  return `$${value.toFixed(2)}`;
+function vp(value) {
+  return `${Math.round(value).toLocaleString()} VP`;
 }
 
 function toast(message) {
@@ -18,7 +13,12 @@ function toast(message) {
   if (!t) return;
   t.textContent = message;
   t.classList.remove("hidden");
-  setTimeout(() => t.classList.add("hidden"), 2200);
+  setTimeout(() => t.classList.add("hidden"), 2500);
+}
+
+function updateVpDisplay(state = getState()) {
+  const vpEl = $("#vpBalance");
+  if (vpEl) vpEl.textContent = state.wallet.vpBalance.toLocaleString();
 }
 
 function runShop() {
@@ -26,100 +26,101 @@ function runShop() {
   const featured = getFeaturedBundle(state);
   const rotated = getRotationProducts(state);
 
+  updateVpDisplay(state);
+
   const dayStart = new Date();
   dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart);
   dayEnd.setDate(dayEnd.getDate() + Number(state.settings.rotationDays));
-
   $("#rotationRange").textContent = `${dayStart.toDateString()} — ${dayEnd.toDateString()}`;
 
-  const bundleRoot = $("#bundleList");
-  bundleRoot.innerHTML = featured
-    ? `<article class="bundle-card">
-        <img src="${featured.image}" alt="${featured.name}" />
-        <div class="meta">
-          <p class="eyebrow">FEATURED</p>
-          <h3>${featured.name}</h3>
-          <p class="subtle">${featured.items.length} items • ${featured.discount}% OFF</p>
-          <p class="price">${money(bundlePrice(state, featured))}</p>
-          <button data-kind="bundle" data-id="${featured.id}" class="cta-btn">Add Bundle</button>
-        </div>
-      </article>`
-    : `<p class="subtle">No bundles configured yet. Add one from Admin Panel.</p>`;
+  if (featured) {
+    $("#bundleName").textContent = featured.name;
+    $("#bundleInfo").textContent = `${featured.items.length} items • ${featured.discount}% off`;
+    $("#bundlePrice").textContent = bundlePrice(state, featured).toLocaleString();
+
+    const bundleItems = state.products.filter((p) => featured.items.includes(p.id)).slice(0, 4);
+    $("#bundleWeapons").innerHTML = bundleItems
+      .map(
+        (item) => `<div class="banner-weapon">
+          <img src="${item.image}" alt="${item.name}" />
+          <small>${item.name}</small>
+        </div>`,
+      )
+      .join("");
+
+    $("#addFeaturedBundle").addEventListener("click", () => {
+      const st = getState();
+      st.cart.push({
+        kind: "bundle",
+        id: featured.id,
+        name: featured.name,
+        price: bundlePrice(st, featured),
+      });
+      saveState(st);
+      refreshCartUI();
+      toast("Bundle added to checkout.");
+    });
+  }
 
   const productRoot = $("#productList");
   productRoot.innerHTML = rotated
     .map(
-      (p) => `<article class="product-card">
-      <img src="${p.image}" alt="${p.name}" />
-      <div class="meta">
-        <p class="eyebrow">${p.rarity}</p>
-        <h3>${p.name}</h3>
-        <p class="price">${money(p.price)}</p>
+      (p) => `<article class="offer-card rarity-${p.rarity.toLowerCase()}">
+      <div class="offer-asset-wrap">
+        <img src="${p.image}" alt="${p.name}" class="offer-asset" />
       </div>
-      <button data-kind="product" data-id="${p.id}" class="ghost-btn">Add to Cart</button>
+      <div class="offer-meta">
+        <span>${p.name}</span>
+        <button data-id="${p.id}" class="offer-buy">${vp(p.price)}</button>
+      </div>
     </article>`,
     )
     .join("");
 
-  productRoot.addEventListener("click", onAddToCart);
-  bundleRoot.addEventListener("click", onAddToCart);
+  productRoot.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-id]");
+    if (!btn) return;
 
-  setupCart();
-}
-
-function onAddToCart(e) {
-  const target = e.target.closest("button[data-kind]");
-  if (!target) return;
-  const state = getState();
-  const id = Number(target.dataset.id);
-  const kind = target.dataset.kind;
-
-  if (kind === "product") {
-    const product = state.products.find((p) => p.id === id);
+    const st = getState();
+    const product = st.products.find((p) => p.id === Number(btn.dataset.id));
     if (!product) return;
-    state.cart.push({ kind, id, name: product.name, price: product.price });
-  }
 
-  if (kind === "bundle") {
-    const bundle = state.bundles.find((b) => b.id === id);
-    if (!bundle) return;
-    state.cart.push({ kind, id, name: bundle.name, price: bundlePrice(state, bundle) });
-  }
+    st.cart.push({ kind: "product", id: product.id, name: product.name, price: product.price });
+    saveState(st);
+    refreshCartUI();
+    toast(`${product.name} added.`);
+  });
 
-  saveState(state);
-  refreshCartUI();
-  toast("Added to cart.");
+  setupCheckoutDrawer();
 }
 
 function refreshCartUI() {
   const state = getState();
-  const count = state.cart.length;
+  updateVpDisplay(state);
+
   const total = state.cart.reduce((acc, i) => acc + i.price, 0);
 
-  const cc = $("#cartCount");
-  if (cc) cc.textContent = String(count);
-
-  const items = $("#cartItems");
-  if (items) {
-    items.innerHTML = count
+  const itemsRoot = $("#cartItems");
+  if (itemsRoot) {
+    itemsRoot.innerHTML = state.cart.length
       ? state.cart
           .map(
             (item, idx) => `<div class="cart-row">
-        <div>
-          <p>${item.name}</p>
-          <small>${item.kind.toUpperCase()}</small>
-        </div>
-        <div class="row-gap">
-          <strong>${money(item.price)}</strong>
-          <button data-remove="${idx}" class="icon-btn">Remove</button>
-        </div>
-      </div>`,
+            <div>
+              <p>${item.name}</p>
+              <small>${item.kind.toUpperCase()}</small>
+            </div>
+            <div class="row-gap">
+              <strong>${vp(item.price)}</strong>
+              <button data-remove="${idx}" class="icon-btn">Remove</button>
+            </div>
+          </div>`,
           )
           .join("")
-      : `<p class="subtle">Your cart is empty.</p>`;
+      : `<p class="subtle">No items yet. Add skins or bundles from the store.</p>`;
 
-    items.querySelectorAll("button[data-remove]").forEach((btn) => {
+    itemsRoot.querySelectorAll("button[data-remove]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const st = getState();
         st.cart.splice(Number(btn.dataset.remove), 1);
@@ -129,40 +130,122 @@ function refreshCartUI() {
     });
   }
 
-  const ct = $("#cartTotal");
-  if (ct) ct.textContent = money(total);
+  const totalEl = $("#cartTotal");
+  if (totalEl) totalEl.textContent = vp(total);
 }
 
-function setupCart() {
+function setupCheckoutDrawer() {
   refreshCartUI();
+
   const drawer = $("#cartDrawer");
   $("#openCart")?.addEventListener("click", () => drawer.classList.remove("hidden"));
   $("#closeCart")?.addEventListener("click", () => drawer.classList.add("hidden"));
 
+  $("#topupBtn")?.addEventListener("click", () => {
+    const amount = Number($("#topupAmount").value);
+    const method = $("#topupMethod").value;
+    const st = getState();
+    st.wallet.vpBalance += amount;
+    st.orders.unshift({
+      id: `TOPUP-${Date.now()}`,
+      type: "VP_TOPUP",
+      paymentMethod: method,
+      status: "PAID_FAKE",
+      amount,
+      date: new Date().toISOString(),
+    });
+    saveState(st);
+    refreshCartUI();
+    toast(`Top up complete: +${vp(amount)} via ${method.toUpperCase()}.`);
+  });
+
   $("#checkoutBtn")?.addEventListener("click", () => {
     const st = getState();
+    const total = st.cart.reduce((acc, i) => acc + i.price, 0);
+    const paymentMethod = $("#purchaseMethod").value;
+
     if (!st.cart.length) {
-      toast("Cart is empty.");
+      toast("Your cart is empty.");
       return;
     }
-    const total = st.cart.reduce((acc, i) => acc + i.price, 0);
+
+    if (paymentMethod === "vp_wallet" && st.wallet.vpBalance < total) {
+      toast("Not enough VP. Please top up first.");
+      return;
+    }
+
+    if (paymentMethod === "vp_wallet") {
+      st.wallet.vpBalance -= total;
+    }
+
     st.orders.unshift({
       id: `ORD-${Date.now()}`,
+      type: "SHOP_PURCHASE",
       date: new Date().toISOString(),
       status: "PAID_FAKE",
+      paymentMethod,
       items: st.cart,
-      total: Number(total.toFixed(2)),
+      total,
+      vpBalanceAfter: st.wallet.vpBalance,
     });
+
     st.cart = [];
     saveState(st);
     refreshCartUI();
-    toast("Fake checkout complete.");
+    toast(`Purchase complete via ${paymentMethod.toUpperCase()}.`);
   });
 }
 
-function runAdmin() {
-  const state = getState();
+function isAdminAuthed() {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
+}
 
+function setAdminAuthed(value) {
+  sessionStorage.setItem(ADMIN_SESSION_KEY, value ? "true" : "false");
+}
+
+function mountAdminAuth() {
+  const loginCard = $("#adminLoginCard");
+  const app = $("#adminApp");
+  const logoutBtn = $("#logoutAdmin");
+
+  if (isAdminAuthed()) {
+    loginCard.classList.add("hidden");
+    app.classList.remove("hidden");
+    logoutBtn.classList.remove("hidden");
+  }
+
+  $("#adminLoginForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const st = getState();
+    const fd = new FormData(e.currentTarget);
+
+    const username = fd.get("username").toString();
+    const password = fd.get("password").toString();
+
+    if (username === st.admin.username && password === st.admin.password) {
+      setAdminAuthed(true);
+      loginCard.classList.add("hidden");
+      app.classList.remove("hidden");
+      logoutBtn.classList.remove("hidden");
+      runAdminApp();
+      toast("Admin login successful.");
+      return;
+    }
+
+    toast("Invalid admin credentials.");
+  });
+
+  logoutBtn?.addEventListener("click", () => {
+    setAdminAuthed(false);
+    location.reload();
+  });
+}
+
+function runAdminApp() {
+  if (!isAdminAuthed()) return;
+
+  const state = getState();
   const settings = $("#settingsForm");
   settings.rotationSize.value = state.settings.rotationSize;
   settings.rotationDays.value = state.settings.rotationDays;
@@ -171,14 +254,15 @@ function runAdmin() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const st = getState();
-    const product = {
+
+    st.products.push({
       id: st.products.length ? Math.max(...st.products.map((p) => p.id)) + 1 : 1,
       name: fd.get("name").toString().trim(),
-      price: Number(fd.get("price")),
+      price: Math.round(Number(fd.get("price"))),
       rarity: fd.get("rarity").toString(),
       image: fd.get("image").toString().trim(),
-    };
-    st.products.push(product);
+    });
+
     saveState(st);
     e.currentTarget.reset();
     renderAdminLists();
@@ -189,6 +273,7 @@ function runAdmin() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const st = getState();
+
     const itemIds = fd
       .get("productIds")
       .toString()
@@ -197,7 +282,7 @@ function runAdmin() {
       .filter((id) => st.products.some((p) => p.id === id));
 
     if (!itemIds.length) {
-      toast("Bundle requires valid product IDs.");
+      toast("Bundle needs valid product IDs.");
       return;
     }
 
@@ -208,6 +293,7 @@ function runAdmin() {
       image: fd.get("image").toString().trim(),
       items: itemIds,
     });
+
     saveState(st);
     e.currentTarget.reset();
     renderAdminLists();
@@ -221,7 +307,7 @@ function runAdmin() {
     st.settings.rotationSize = Number(fd.get("rotationSize"));
     st.settings.rotationDays = Number(fd.get("rotationDays"));
     saveState(st);
-    toast("Rotation settings updated.");
+    toast("Rotation updated.");
   });
 
   renderAdminLists();
@@ -236,7 +322,7 @@ function renderAdminLists() {
   prodRoot.innerHTML = state.products
     .map(
       (p) => `<div class="stack-row">
-      <span>#${p.id} ${p.name} (${p.rarity}) - ${money(p.price)}</span>
+      <span>#${p.id} ${p.name} — ${vp(p.price)}</span>
       <button data-del-product="${p.id}" class="icon-btn">Delete</button>
     </div>`,
     )
@@ -245,7 +331,7 @@ function renderAdminLists() {
   bundleRoot.innerHTML = state.bundles
     .map(
       (b) => `<div class="stack-row">
-      <span>#${b.id} ${b.name} (${b.discount}% OFF) - ${money(bundlePrice(state, b))}</span>
+      <span>#${b.id} ${b.name} (${b.discount}% off) — ${vp(bundlePrice(state, b))}</span>
       <button data-del-bundle="${b.id}" class="icon-btn">Delete</button>
     </div>`,
     )
@@ -256,25 +342,22 @@ function renderAdminLists() {
         .map(
           (o) => `<div class="stack-row stack-col">
       <strong>${o.id} • ${o.status}</strong>
-      <span>${new Date(o.date).toLocaleString()} • ${money(o.total)}</span>
-      <span>${o.items.map((i) => i.name).join(", ")}</span>
+      <span>${new Date(o.date).toLocaleString()} • ${o.paymentMethod ?? "-"}</span>
+      <span>${o.type === "VP_TOPUP" ? `Top up ${vp(o.amount)}` : `${vp(o.total)} / ${o.items?.map((i) => i.name).join(", ")}`}</span>
     </div>`,
         )
         .join("")
-    : `<p class="subtle">No fake checkouts yet.</p>`;
+    : `<p class="subtle">No transactions yet.</p>`;
 
   prodRoot.querySelectorAll("button[data-del-product]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const st = getState();
       const id = Number(btn.dataset.delProduct);
       st.products = st.products.filter((p) => p.id !== id);
-      st.bundles = st.bundles.map((b) => ({
-        ...b,
-        items: b.items.filter((itemId) => itemId !== id),
-      }));
+      st.bundles = st.bundles.map((b) => ({ ...b, items: b.items.filter((itemId) => itemId !== id) }));
       saveState(st);
       renderAdminLists();
-      toast("Product removed.");
+      toast("Product deleted.");
     });
   });
 
@@ -284,10 +367,13 @@ function renderAdminLists() {
       st.bundles = st.bundles.filter((b) => b.id !== Number(btn.dataset.delBundle));
       saveState(st);
       renderAdminLists();
-      toast("Bundle removed.");
+      toast("Bundle deleted.");
     });
   });
 }
 
 if (page === "shop") runShop();
-if (page === "admin") runAdmin();
+if (page === "admin") {
+  mountAdminAuth();
+  if (isAdminAuthed()) runAdminApp();
+}
