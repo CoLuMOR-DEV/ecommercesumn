@@ -20,7 +20,7 @@
       </div>
       <nav class="nav-actions">
         <a href="./admin.html" class="ghost-btn">Admin Panel</a>
-        <div class="vp-pill"><img src="./src/vp-logo.svg" alt="VP" /> <strong id="vpBalance">0</strong></div>
+        <div class="vp-pill"><img src="https://media.valorant-api.com/currencies/85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741/displayicon.png" alt="VP" /> <strong id="vpBalance">0</strong></div>
         <button id="openCart" class="cta-btn">Wallet & Checkout</button>
       </nav>
     </header>
@@ -33,7 +33,8 @@
           <p id="bundleInfo" class="subtle"></p>
           <p class="timer-label">Bundle refresh in <span id="bundleTimer">--:--:--</span></p>
           <div class="banner-price-row">
-            <span class="vp-pill large"><img src="./src/vp-logo.svg" alt="VP" /> <strong id="bundlePrice">0</strong></span>
+            <span class="vp-pill large"><img src="https://media.valorant-api.com/currencies/85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741/displayicon.png" alt="VP" /> <strong id="bundlePrice">0</strong></span>
+            <button id="inspectBundleBtn" class="ghost-btn">Inspect Bundle</button>
             <button id="addFeaturedBundle" class="cta-btn">Add Bundle</button>
           </div>
         </div>
@@ -42,6 +43,10 @@
 
       <section class="offers-head fade-in-up delay-1">
         <h2>DAILY OFFERS</h2>
+        <div class="button-row">
+          <button id="refreshShopBtn" class="ghost-btn">Refresh Shop (500 VP)</button>
+          <button id="refreshBundleBtn" class="ghost-btn">Refresh Bundle (500 VP)</button>
+        </div>
         <div class="timer-wrap">
           <span id="rotationRange" class="subtle"></span>
           <strong id="shopTimer">--:--:--</strong>
@@ -65,7 +70,7 @@
       <div id="topupPanel" class="panel active">
         <div class="wallet-box">
           <p class="eyebrow">VP BALANCE</p>
-          <p class="wallet-big"><img src="./src/vp-logo.svg" alt="VP" /> <strong id="walletPanelBalance">0</strong></p>
+          <p class="wallet-big"><img src="https://media.valorant-api.com/currencies/85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741/displayicon.png" alt="VP" /> <strong id="walletPanelBalance">0</strong></p>
           <div class="wallet-row">
             <select id="topupAmount">
               <option value="475">475 VP</option>
@@ -114,6 +119,16 @@
         <div class="video-wrap">
           <video id="upgradeVideo" controls playsinline></video>
         </div>
+      </div>
+    </div>
+
+
+    <div id="purchaseModal" class="modal hidden">
+      <div class="modal-content purchase-modal">
+        <h2>PURCHASE COMPLETE</h2>
+        <img id="purchaseImage" src="" alt="Purchased item" />
+        <p id="purchaseName"></p>
+        <button id="closePurchase" class="cta-btn">Continue</button>
       </div>
     </div>
 

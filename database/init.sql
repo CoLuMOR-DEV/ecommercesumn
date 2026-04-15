@@ -105,34 +105,40 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 INSERT INTO products(name, category, price_vp, image_url, rarity)
 VALUES
-('Storm Maw Judge', 'SKIN', 875, 'https://media.valorant-api.com/weaponskins/309743ac-4288-11dc-d563-88844caa2c4d/displayicon.png', 'PREMIUM'),
-('Blades of Primordia', 'SKIN', 4350, 'https://media.valorant-api.com/weaponskins/3e633a9a-482a-30fb-90da-059ff6cd400b/displayicon.png', 'EXCLUSIVE'),
-('Convex Sheriff', 'SKIN', 875, 'https://media.valorant-api.com/weaponskins/e8fd8fc3-40ce-3ed1-235a-1c8d9654874f/displayicon.png', 'SELECT'),
-('Bolt Knife', 'SKIN', 4350, 'https://media.valorant-api.com/weaponskins/ff4bc096-4e6c-b67a-296a-5e814e4c0274/displayicon.png', 'EXCLUSIVE'),
+('Xenohunter Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/94c085e6-48e1-c879-2552-88bf7850c5a8/displayicon.png', 'PREMIUM'),
+('Neptune Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/a67c2daa-4f4d-1af0-0ff4-6fafde471776/displayicon.png', 'PREMIUM'),
+('Glitchpop Odin', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/97af88e4-4176-9fa3-4a26-57919443dab7/displayicon.png', 'ULTRA'),
 ('Neo Frontier Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/bd647d56-4542-19cd-e1ed-4fb429c78cf9/displayicon.png', 'PREMIUM'),
-('Glitchpop Odin', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/97af88e4-4176-9fa3-4a26-57919443dab7/displayicon.png', 'ULTRA');
+('Sentinels of Light Odin', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/67fb338a-4b21-ed70-7c2a-46bef4742b4f/displayicon.png', 'ULTRA'),
+('Reaver Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/8dda01a6-4237-f430-ac70-c3ba677963e9/displayicon.png', 'PREMIUM'),
+('Sovereign Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/a7995818-409f-c79b-20b7-28ad642f3135/displayicon.png', 'PREMIUM'),
+('Evori Dreamwings Odin', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/fa1c05fd-49fc-ad93-17d8-f0aaf11874cd/displayicon.png', 'ULTRA');
 
 INSERT INTO skin_upgrades(product_id, upgrade_name, video_url, sort_order)
 VALUES
-(1, 'Level 2 VFX', 'https://media.valorant-api.com/weaponskinlevels/83af5e35-4a5a-f8e0-0622-8ebcb8a43f63/streamedvideo.mp4', 1),
-(2, 'Level 2 VFX', 'https://media.valorant-api.com/weaponskinlevels/35ad6cdf-4e05-df12-c0e8-e6a8818c4888/streamedvideo.mp4', 1);
+(1, 'VFX', 'https://valorant.dyn.riotcdn.net/x/videos/release-12.06/32f7797f-4491-e21f-e40b-cfb639df3c97_default_universal.mp4', 1),
+(2, 'VFX', 'https://valorant.dyn.riotcdn.net/x/videos/release-12.06/b794b134-42d6-3138-188d-66a940a66304_default_universal.mp4', 1),
+(3, 'VFX', 'https://valorant.dyn.riotcdn.net/x/videos/release-12.06/72c8af91-f9f9-4044-801c-3e73ee2f2aa1_default_universal.mp4', 1),
+(4, 'VFX', 'https://valorant.dyn.riotcdn.net/x/videos/release-12.06/729c9e7f-43be-dce4-b532-b99995902188_default_universal.mp4', 1);
 
 INSERT INTO bundles(name, description, discount_percent, image_url)
 VALUES
-('Run It Back: Lunar', 'Featured collection with mixed premium and exclusive skins.', 20.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt5c94f47ca632a0f6/67a7be16f9679130d4ffbe74/1920x1080_V25A2_Act2_Battlepass.jpg'),
-('Arcane Arsenal', 'Includes popular Odin and melee picks for rotation refreshes.', 15.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blta2ff0fe34b2fd5e6/67f7eb009f852f26510f3fd4/vct25-stage1-article-cover.png');
+('Abyssal Depths', 'Premium deep-sea themed Odin lineup.', 20.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt5c94f47ca632a0f6/67a7be16f9679130d4ffbe74/1920x1080_V25A2_Act2_Battlepass.jpg'),
+('Celestial Judgment', 'High-tier light infused collection.', 18.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blta2ff0fe34b2fd5e6/67f7eb009f852f26510f3fd4/vct25-stage1-article-cover.png'),
+('Sovereign Circuit', 'Classic sovereign and dreamwings mix.', 15.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blteee4855ce9cb8807/66ec6afdee4e8d390ce05ddf/1920x1080_v25A1_Act1_Competitive_MapPool.png');
 
 INSERT INTO bundle_items(bundle_id, product_id)
 VALUES
 (1,1),(1,2),(1,3),(1,4),
-(2,2),(2,5),(2,6);
+(2,3),(2,5),(2,6),
+(3,2),(3,7),(3,8);
 
 INSERT INTO app_settings(setting_key, setting_value)
 VALUES
 ('rotation_hours','24'),
 ('bundle_refresh_hours','24'),
-('shop_refresh_cost_vp','25'),
-('bundle_refresh_cost_vp','40')
+('shop_refresh_cost_vp','500'),
+('bundle_refresh_cost_vp','500')
 ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
 
 DELIMITER $$
@@ -174,7 +180,7 @@ INSERT INTO shop_rotations(starts_at, ends_at, is_active)
 VALUES (NOW(), DATE_ADD(NOW(), INTERVAL 24 HOUR), 1);
 
 INSERT INTO rotation_products(rotation_id, product_id)
-VALUES (1,1),(1,2),(1,3),(1,4);
+VALUES (1,1),(1,2),(1,3),(1,4),(1,5),(1,6);
 
 INSERT INTO rotation_bundles(rotation_id, bundle_id)
 VALUES (1,1);

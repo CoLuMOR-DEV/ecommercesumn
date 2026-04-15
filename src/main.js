@@ -1,18 +1,11 @@
-import {
-  bundlePrice,
-  getFeaturedBundle,
-  getRotationProducts,
-  getState,
-  getTimeLeft,
-  saveState,
-} from "./store.js";
+import { bundlePrice, getFeaturedBundle, getRotationProducts, getState, getTimeLeft, saveState } from "./store.js";
 
 const page = document.body.dataset.page;
-const $ = (sel) => document.querySelector(sel);
+const $ = (s) => document.querySelector(s);
 const ADMIN_SESSION_KEY = "valorant_admin_session";
 
-function vp(value) {
-  return `${Math.round(value).toLocaleString()} VP`;
+function vp(v) {
+  return `${Math.round(v).toLocaleString()} VP`;
 }
 
 function toast(message) {
@@ -20,156 +13,76 @@ function toast(message) {
   if (!t) return;
   t.textContent = message;
   t.classList.remove("hidden");
-  setTimeout(() => t.classList.add("hidden"), 2400);
+  setTimeout(() => t.classList.add("hidden"), 2200);
 }
 
-function pingSound(frequency = 640, duration = 0.08) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "triangle";
-    osc.frequency.value = frequency;
-    gain.gain.value = 0.03;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
-  } catch {
-    // ignore
-  }
+function playClickSound(type = "soft") {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = type === "confirm" ? 920 : 640;
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (type === "confirm" ? 0.18 : 0.09));
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + (type === "confirm" ? 0.19 : 0.1));
 }
 
 function updateVpDisplay(state = getState()) {
-  const text = state.wallet.vpBalance.toLocaleString();
-  if ($("#vpBalance")) $("#vpBalance").textContent = text;
-  if ($("#walletPanelBalance")) $("#walletPanelBalance").textContent = text;
+  const val = state.wallet.vpBalance.toLocaleString();
+  if ($("#vpBalance")) $("#vpBalance").textContent = val;
+  if ($("#walletPanelBalance")) $("#walletPanelBalance").textContent = val;
 }
 
 function renderTimers(state) {
-  const shopCycleMs = state.settings.rotationHours * 60 * 60 * 1000;
-  const bundleCycleMs = state.settings.bundleRefreshHours * 60 * 60 * 1000;
-
-  const nextShop = state.rotation.shopCycleStartedAt + shopCycleMs;
-  const nextBundle = state.rotation.bundleCycleStartedAt + bundleCycleMs;
-
-  const shopTimer = $("#shopTimer");
-  const bundleTimer = $("#bundleTimer");
-
-  if (shopTimer) shopTimer.textContent = getTimeLeft(nextShop);
-  if (bundleTimer) bundleTimer.textContent = getTimeLeft(nextBundle);
+  const nextShop = state.rotation.shopCycleStartedAt + state.settings.rotationHours * 3600000;
+  const nextBundle = state.rotation.bundleCycleStartedAt + state.settings.bundleRefreshHours * 3600000;
+  if ($("#shopTimer")) $("#shopTimer").textContent = getTimeLeft(nextShop);
+  if ($("#bundleTimer")) $("#bundleTimer").textContent = getTimeLeft(nextBundle);
 }
 
-function runShop() {
+function showPurchaseModal(entry) {
+  const first = entry.items?.[0];
   const state = getState();
-  const featured = getFeaturedBundle(state);
-  const rotated = getRotationProducts(state);
-
-  updateVpDisplay(state);
-  renderTimers(state);
-
-  const start = new Date(state.rotation.shopCycleStartedAt);
-  const end = new Date(state.rotation.shopCycleStartedAt + state.settings.rotationHours * 3600000);
-  $("#rotationRange").textContent = `${start.toLocaleString()} - ${end.toLocaleString()}`;
-
-  if (featured) {
-    $("#bundleName").textContent = featured.name;
-    $("#bundleInfo").textContent = `${featured.items.length} items • ${featured.discount}% off`;
-    $("#bundlePrice").textContent = bundlePrice(state, featured).toLocaleString();
-
-    const featuredItems = state.products.filter((item) => featured.items.includes(item.id)).slice(0, 4);
-    $("#bundleWeapons").innerHTML = featuredItems
-      .map(
-        (item) => `<div class="banner-weapon float-item">
-          <img src="${item.image}" alt="${item.name}" />
-          <small>${item.name}</small>
-        </div>`,
-      )
-      .join("");
-
-    $("#addFeaturedBundle").addEventListener("click", () => {
-      const st = getState();
-      st.cart.push({ kind: "bundle", id: featured.id, name: featured.name, price: bundlePrice(st, featured) });
-      saveState(st);
-      refreshCartUI();
-      pingSound(760);
-      toast("Bundle added to checkout");
-    });
-  }
-
-  const productRoot = $("#productList");
-  productRoot.innerHTML = rotated
-    .map(
-      (item) => `<article class="offer-card rarity-${item.rarity.toLowerCase()} fade-in-up">
-      <div class="offer-asset-wrap inspect-target" data-inspect-id="${item.id}">
-        <img src="${item.image}" alt="${item.name}" class="offer-asset" />
-      </div>
-      <div class="offer-meta">
-        <span>${item.name}</span>
-        <div class="offer-actions">
-          <button data-inspect-id="${item.id}" class="icon-btn">Inspect</button>
-          <button data-id="${item.id}" class="offer-buy"><img src="./src/vp-logo.svg" alt="VP"/> ${item.price}</button>
-        </div>
-      </div>
-    </article>`,
-    )
-    .join("");
-
-  productRoot.addEventListener("click", (e) => {
-    const buyBtn = e.target.closest("button[data-id]");
-    const inspectBtn = e.target.closest("[data-inspect-id]");
-
-    if (buyBtn) {
-      const st = getState();
-      const product = st.products.find((p) => p.id === Number(buyBtn.dataset.id));
-      if (!product) return;
-      st.cart.push({ kind: "product", id: product.id, name: product.name, price: product.price });
-      saveState(st);
-      refreshCartUI();
-      pingSound(730);
-      toast(`${product.name} added`);
-      return;
-    }
-
-    if (inspectBtn) {
-      const st = getState();
-      const product = st.products.find((p) => p.id === Number(inspectBtn.dataset.inspectId));
-      if (!product) return;
-      openInspect(product);
-    }
-  });
-
-  setupCheckoutDrawer();
-
-  setInterval(() => {
-    renderTimers(getState());
-  }, 1000);
+  const product = first ? state.products.find((p) => p.id === first.id) : null;
+  $("#purchaseImage").src = product?.image || state.products[0]?.image || "";
+  $("#purchaseName").textContent = first ? `${first.name} acquired` : "Collection acquired";
+  $("#purchaseModal").classList.remove("hidden");
 }
 
-function openInspect(product) {
-  $("#inspectImage").src = product.image;
-  $("#inspectTitle").textContent = product.name;
-  $("#inspectPrice").textContent = vp(product.price);
+function openInspect(item, state, isBundle = false) {
+  $("#inspectImage").src = item.image;
+  $("#inspectTitle").textContent = item.name;
+  $("#inspectPrice").textContent = vp(isBundle ? bundlePrice(state, item) : item.price);
 
   const list = $("#upgradeList");
   const video = $("#upgradeVideo");
 
-  const upgrades = product.upgrades?.length ? product.upgrades : [{ level: "Base", video: "" }];
+  let upgrades = [];
+  if (isBundle) {
+    upgrades = item.items.map((id) => {
+      const p = state.products.find((x) => x.id === id);
+      return { level: p?.name ?? `Item ${id}`, video: p?.upgrades?.[0]?.video ?? "" };
+    });
+  } else {
+    upgrades = item.upgrades?.length ? item.upgrades : [{ level: "Base", video: "" }];
+  }
 
   list.innerHTML = upgrades
-    .map(
-      (up, idx) => `<button data-video="${up.video}" class="ghost-btn ${idx === 0 ? "active-upgrade" : ""}">${up.level}</button>`,
-    )
+    .map((u, idx) => `<button class="ghost-btn ${idx === 0 ? "active-upgrade" : ""}" data-video="${u.video}">${u.level}</button>`)
     .join("");
 
-  video.src = upgrades[0].video || "";
+  video.src = upgrades[0]?.video || "";
 
-  list.querySelectorAll("button[data-video]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      list.querySelectorAll("button").forEach((b) => b.classList.remove("active-upgrade"));
-      btn.classList.add("active-upgrade");
-      video.src = btn.dataset.video;
-      pingSound(520, 0.06);
+  list.querySelectorAll("button[data-video]").forEach((b) => {
+    b.addEventListener("click", () => {
+      list.querySelectorAll("button").forEach((x) => x.classList.remove("active-upgrade"));
+      b.classList.add("active-upgrade");
+      video.src = b.dataset.video;
+      playClickSound("soft");
     });
   });
 
@@ -177,35 +90,25 @@ function openInspect(product) {
 }
 
 function refreshCartUI() {
-  const state = getState();
-  updateVpDisplay(state);
+  const st = getState();
+  updateVpDisplay(st);
+  const total = st.cart.reduce((a, b) => a + b.price, 0);
 
-  const total = state.cart.reduce((sum, item) => sum + item.price, 0);
-  const cartRoot = $("#cartItems");
-
-  if (cartRoot) {
-    cartRoot.innerHTML = state.cart.length
-      ? state.cart
+  const root = $("#cartItems");
+  if (root) {
+    root.innerHTML = st.cart.length
+      ? st.cart
           .map(
-            (item, idx) => `<div class="cart-row">
-          <div>
-            <p>${item.name}</p>
-            <small>${item.kind.toUpperCase()}</small>
-          </div>
-          <div class="row-gap">
-            <strong>${vp(item.price)}</strong>
-            <button data-remove="${idx}" class="icon-btn">Remove</button>
-          </div>
-        </div>`,
+            (item, i) => `<div class="cart-row"><div><p>${item.name}</p><small>${item.kind.toUpperCase()}</small></div><div class="row-gap"><strong>${vp(item.price)}</strong><button data-remove="${i}" class="icon-btn">Remove</button></div></div>`,
           )
           .join("")
       : `<p class="subtle">Your checkout bag is empty.</p>`;
 
-    cartRoot.querySelectorAll("button[data-remove]").forEach((btn) => {
+    root.querySelectorAll("button[data-remove]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const st = getState();
-        st.cart.splice(Number(btn.dataset.remove), 1);
-        saveState(st);
+        const s = getState();
+        s.cart.splice(Number(btn.dataset.remove), 1);
+        saveState(s);
         refreshCartUI();
       });
     });
@@ -214,23 +117,16 @@ function refreshCartUI() {
   if ($("#cartTotal")) $("#cartTotal").textContent = vp(total);
 }
 
-function setupCheckoutDrawer() {
-  refreshCartUI();
-
+function setupDrawer() {
   const drawer = $("#cartDrawer");
   $("#openCart")?.addEventListener("click", () => drawer.classList.remove("hidden"));
   $("#closeCart")?.addEventListener("click", () => drawer.classList.add("hidden"));
 
-  $("#closeInspect")?.addEventListener("click", () => $("#inspectModal").classList.add("hidden"));
-  $("#inspectModal")?.addEventListener("click", (e) => {
-    if (e.target.id === "inspectModal") $("#inspectModal").classList.add("hidden");
-  });
-
   document.querySelectorAll(".tab-btn").forEach((tab) => {
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
       tab.classList.add("active");
-      document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
       $(`#${tab.dataset.tab}Panel`).classList.add("active");
     });
   });
@@ -238,93 +134,157 @@ function setupCheckoutDrawer() {
   $("#topupBtn")?.addEventListener("click", () => {
     const amount = Number($("#topupAmount").value);
     const method = $("#topupMethod").value;
-
     const st = getState();
     st.wallet.vpBalance += amount;
-    st.orders.unshift({
-      id: `TOPUP-${Date.now()}`,
-      type: "TOPUP",
-      date: new Date().toISOString(),
-      status: "COMPLETED",
-      paymentMethod: method,
-      amount,
-    });
-
+    st.orders.unshift({ id: `TOPUP-${Date.now()}`, type: "TOPUP", amount, paymentMethod: method, status: "COMPLETED", date: new Date().toISOString() });
     saveState(st);
     refreshCartUI();
-    pingSound(880, 0.1);
-    toast(`Top up successful: +${vp(amount)}`);
+    playClickSound("confirm");
+    toast(`Top up successful +${vp(amount)}`);
   });
 
   $("#checkoutBtn")?.addEventListener("click", () => {
     const st = getState();
+    if (!st.cart.length) return toast("Add items to continue");
+    const total = st.cart.reduce((a, b) => a + b.price, 0);
     const method = $("#purchaseMethod").value;
-    const total = st.cart.reduce((sum, item) => sum + item.price, 0);
-
-    if (!st.cart.length) {
-      toast("Add items to continue");
-      return;
-    }
-
-    if (method === "vp_wallet" && st.wallet.vpBalance < total) {
-      toast("Insufficient VP balance");
-      return;
-    }
-
+    if (method === "vp_wallet" && st.wallet.vpBalance < total) return toast("Insufficient VP");
     if (method === "vp_wallet") st.wallet.vpBalance -= total;
 
-    st.orders.unshift({
+    const entry = {
       id: `ORD-${Date.now()}`,
       type: "PURCHASE",
-      date: new Date().toISOString(),
-      status: "CONFIRMED",
-      paymentMethod: method,
-      total,
       items: st.cart,
-    });
-
+      total,
+      paymentMethod: method,
+      status: "CONFIRMED",
+      date: new Date().toISOString(),
+    };
+    st.orders.unshift(entry);
     st.cart = [];
     saveState(st);
     refreshCartUI();
-    pingSound(940, 0.13);
-    toast("Purchase complete");
+    playClickSound("confirm");
+    showPurchaseModal(entry);
   });
+}
+
+function runShop() {
+  const st = getState();
+  const featured = getFeaturedBundle(st);
+  const rotated = getRotationProducts(st);
+
+  updateVpDisplay(st);
+  renderTimers(st);
+  setInterval(() => renderTimers(getState()), 1000);
+
+  const start = new Date(st.rotation.shopCycleStartedAt);
+  const end = new Date(st.rotation.shopCycleStartedAt + st.settings.rotationHours * 3600000);
+  $("#rotationRange").textContent = `${start.toLocaleString()} - ${end.toLocaleString()}`;
+
+  $("#refreshShopBtn")?.addEventListener("click", () => {
+    const s = getState();
+    if (s.wallet.vpBalance < 500) return toast("Need 500 VP");
+    s.wallet.vpBalance -= 500;
+    s.rotation.shopNonce += 1;
+    s.rotation.shopCycleStartedAt = Date.now();
+    saveState(s);
+    playClickSound("confirm");
+    location.reload();
+  });
+
+  $("#refreshBundleBtn")?.addEventListener("click", () => {
+    const s = getState();
+    if (s.wallet.vpBalance < 500) return toast("Need 500 VP");
+    s.wallet.vpBalance -= 500;
+    s.rotation.bundleNonce += 1;
+    s.rotation.bundleCycleStartedAt = Date.now();
+    saveState(s);
+    playClickSound("confirm");
+    location.reload();
+  });
+
+  if (featured) {
+    $("#bundleName").textContent = featured.name;
+    $("#bundleInfo").textContent = `${featured.items.length} items • ${featured.discount}% off`;
+    $("#bundlePrice").textContent = bundlePrice(st, featured).toLocaleString();
+    const bundleItems = st.products.filter((p) => featured.items.includes(p.id));
+    $("#bundleWeapons").innerHTML = bundleItems.map((p) => `<div class="banner-weapon float-item"><img src="${p.image}" alt="${p.name}"/><small>${p.name}</small></div>`).join("");
+
+    $("#inspectBundleBtn")?.addEventListener("click", () => openInspect(featured, st, true));
+    $("#addFeaturedBundle")?.addEventListener("click", () => {
+      const s = getState();
+      s.cart.push({ kind: "bundle", id: featured.id, name: featured.name, price: bundlePrice(s, featured) });
+      saveState(s);
+      refreshCartUI();
+      playClickSound("soft");
+    });
+  }
+
+  $("#productList").innerHTML = rotated
+    .map(
+      (p) => `<article class="offer-card rarity-${p.rarity.toLowerCase()} fade-in-up"><div class="offer-asset-wrap" data-inspect="${p.id}"><img src="${p.image}" class="offer-asset" alt="${p.name}"/></div><div class="offer-meta"><span>${p.name}</span><div class="offer-actions"><button class="icon-btn" data-inspect="${p.id}">Inspect</button><button class="offer-buy" data-buy="${p.id}"><img src="${st.settings.vpIcon}" alt="VP"/> ${p.price}</button></div></div></article>`,
+    )
+    .join("");
+
+  $("#productList").addEventListener("click", (e) => {
+    const inspect = e.target.closest("[data-inspect]");
+    const buy = e.target.closest("[data-buy]");
+    const s = getState();
+    if (inspect) {
+      const p = s.products.find((x) => x.id === Number(inspect.dataset.inspect));
+      if (p) openInspect(p, s, false);
+      return;
+    }
+    if (buy) {
+      const p = s.products.find((x) => x.id === Number(buy.dataset.buy));
+      if (!p) return;
+      s.cart.push({ kind: "product", id: p.id, name: p.name, price: p.price });
+      saveState(s);
+      refreshCartUI();
+      playClickSound("soft");
+    }
+  });
+
+  $("#closeInspect")?.addEventListener("click", () => $("#inspectModal").classList.add("hidden"));
+  $("#inspectModal")?.addEventListener("click", (e) => e.target.id === "inspectModal" && $("#inspectModal").classList.add("hidden"));
+  $("#closePurchase")?.addEventListener("click", () => $("#purchaseModal").classList.add("hidden"));
+
+  setupDrawer();
+  refreshCartUI();
 }
 
 function isAdminAuthed() {
   return sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
 }
 
-function setAdminAuthed(value) {
-  sessionStorage.setItem(ADMIN_SESSION_KEY, value ? "true" : "false");
+function setAdminAuthed(v) {
+  sessionStorage.setItem(ADMIN_SESSION_KEY, v ? "true" : "false");
 }
 
 function mountAdminAuth() {
   const loginCard = $("#adminLoginCard");
-  const adminApp = $("#adminApp");
+  const app = $("#adminApp");
   const logout = $("#logoutAdmin");
 
-  const showAuthed = () => {
+  const show = () => {
     loginCard.classList.add("hidden");
-    adminApp.classList.remove("hidden");
+    app.classList.remove("hidden");
     logout.classList.remove("hidden");
   };
 
-  if (isAdminAuthed()) showAuthed();
+  if (isAdminAuthed()) show();
 
   $("#adminLoginForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const st = getState();
-
     if (fd.get("username") === st.admin.username && fd.get("password") === st.admin.password) {
       setAdminAuthed(true);
-      showAuthed();
+      show();
       runAdminApp();
-      toast("Welcome back");
       return;
     }
-
     toast("Login failed");
   });
 
@@ -336,102 +296,47 @@ function mountAdminAuth() {
 
 function runAdminApp() {
   if (!isAdminAuthed()) return;
-
-  const state = getState();
+  const st = getState();
   const settings = $("#settingsForm");
-  settings.rotationSize.value = state.settings.rotationSize;
-  settings.rotationHours.value = state.settings.rotationHours;
-  settings.bundleRefreshHours.value = state.settings.bundleRefreshHours;
-
-  $("#forceShopRefresh")?.addEventListener("click", () => {
-    const st = getState();
-    if (st.wallet.vpBalance < st.settings.shopRefreshCostVp) {
-      toast("Not enough VP for shop refresh");
-      return;
-    }
-    st.wallet.vpBalance -= st.settings.shopRefreshCostVp;
-    st.rotation.shopNonce += 1;
-    st.rotation.shopCycleStartedAt = Date.now();
-    saveState(st);
-    toast("Shop refreshed");
-  });
-
-  $("#forceBundleRefresh")?.addEventListener("click", () => {
-    const st = getState();
-    if (st.wallet.vpBalance < st.settings.bundleRefreshCostVp) {
-      toast("Not enough VP for bundle refresh");
-      return;
-    }
-    st.wallet.vpBalance -= st.settings.bundleRefreshCostVp;
-    st.rotation.bundleNonce += 1;
-    st.rotation.bundleCycleStartedAt = Date.now();
-    saveState(st);
-    toast("Bundle refreshed");
-  });
+  settings.rotationSize.value = st.settings.rotationSize;
+  settings.rotationHours.value = st.settings.rotationHours;
+  settings.bundleRefreshHours.value = st.settings.bundleRefreshHours;
 
   $("#productForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const st = getState();
-
-    st.products.push({
-      id: st.products.length ? Math.max(...st.products.map((p) => p.id)) + 1 : 1,
+    const s = getState();
+    s.products.push({
+      id: s.products.length ? Math.max(...s.products.map((p) => p.id)) + 1 : 1,
       name: fd.get("name").toString().trim(),
       price: Math.round(Number(fd.get("price"))),
       rarity: fd.get("rarity").toString(),
       image: fd.get("image").toString().trim(),
       upgrades: fd.get("video") ? [{ level: "Preview", video: fd.get("video").toString().trim() }] : [],
     });
-
-    saveState(st);
+    saveState(s);
     e.currentTarget.reset();
     renderAdminLists();
-    toast("Product added");
   });
 
   $("#bundleForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const st = getState();
-
+    const s = getState();
     const bundleId = Number(fd.get("bundleId"));
-    const itemIds = fd
+    const items = fd
       .get("productIds")
       .toString()
       .split(",")
-      .map((n) => Number(n.trim()))
-      .filter((id) => st.products.some((p) => p.id === id));
-
-    if (!itemIds.length) {
-      toast("Please include valid product IDs");
-      return;
-    }
-
-    if (bundleId && st.bundles.some((b) => b.id === bundleId)) {
-      st.bundles = st.bundles.map((b) =>
-        b.id === bundleId
-          ? {
-              ...b,
-              name: fd.get("name").toString().trim(),
-              discount: Number(fd.get("discount")),
-              image: fd.get("image").toString().trim(),
-              items: itemIds,
-            }
-          : b,
-      );
-      toast("Bundle updated");
+      .map((v) => Number(v.trim()))
+      .filter((id) => s.products.some((p) => p.id === id));
+    if (!items.length) return toast("Invalid product IDs");
+    if (bundleId && s.bundles.some((b) => b.id === bundleId)) {
+      s.bundles = s.bundles.map((b) => (b.id === bundleId ? { ...b, name: fd.get("name").toString(), discount: Number(fd.get("discount")), image: fd.get("image").toString(), items } : b));
     } else {
-      st.bundles.push({
-        id: st.bundles.length ? Math.max(...st.bundles.map((b) => b.id)) + 1 : 1,
-        name: fd.get("name").toString().trim(),
-        discount: Number(fd.get("discount")),
-        image: fd.get("image").toString().trim(),
-        items: itemIds,
-      });
-      toast("Bundle created");
+      s.bundles.push({ id: s.bundles.length ? Math.max(...s.bundles.map((b) => b.id)) + 1 : 1, name: fd.get("name").toString(), discount: Number(fd.get("discount")), image: fd.get("image").toString(), items });
     }
-
-    saveState(st);
+    saveState(s);
     e.currentTarget.reset();
     renderAdminLists();
   });
@@ -439,11 +344,11 @@ function runAdminApp() {
   settings?.addEventListener("submit", (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const st = getState();
-    st.settings.rotationSize = Number(fd.get("rotationSize"));
-    st.settings.rotationHours = Number(fd.get("rotationHours"));
-    st.settings.bundleRefreshHours = Number(fd.get("bundleRefreshHours"));
-    saveState(st);
+    const s = getState();
+    s.settings.rotationSize = Number(fd.get("rotationSize"));
+    s.settings.rotationHours = Number(fd.get("rotationHours"));
+    s.settings.bundleRefreshHours = Number(fd.get("bundleRefreshHours"));
+    saveState(s);
     toast("Settings saved");
   });
 
@@ -451,76 +356,48 @@ function runAdminApp() {
 }
 
 function renderAdminLists() {
-  const state = getState();
+  const st = getState();
+  const pRoot = $("#adminProductList");
+  const bRoot = $("#adminBundleList");
+  const oRoot = $("#adminOrders");
 
-  const prodRoot = $("#adminProductList");
-  const bundleRoot = $("#adminBundleList");
-  const ordersRoot = $("#adminOrders");
+  pRoot.innerHTML = st.products.map((p) => `<div class="stack-row"><span>#${p.id} ${p.name} — ${vp(p.price)}</span><button class="icon-btn" data-del-product="${p.id}">Delete</button></div>`).join("");
+  bRoot.innerHTML = st.bundles.map((b) => `<div class="stack-row stack-col"><strong>#${b.id} ${b.name}</strong><span>${b.items.length} items • ${b.discount}%</span><button class="ghost-btn" data-fill-bundle="${b.id}">Load into form</button><button class="icon-btn" data-del-bundle="${b.id}">Delete</button></div>`).join("");
+  oRoot.innerHTML = st.orders.length ? st.orders.map((o) => `<div class="stack-row stack-col"><strong>${o.id}</strong><span>${new Date(o.date).toLocaleString()} • ${o.status}</span></div>`).join("") : `<p class="subtle">No transactions yet.</p>`;
 
-  prodRoot.innerHTML = state.products
-    .map(
-      (p) => `<div class="stack-row">
-      <span>#${p.id} ${p.name} — ${vp(p.price)}</span>
-      <button data-del-product="${p.id}" class="icon-btn">Delete</button>
-    </div>`,
-    )
-    .join("");
-
-  bundleRoot.innerHTML = state.bundles
-    .map(
-      (b) => `<div class="stack-row stack-col">
-      <strong>#${b.id} ${b.name}</strong>
-      <span>${b.items.length} items • ${b.discount}% off • ${vp(bundlePrice(state, b))}</span>
-      <button data-fill-bundle="${b.id}" class="ghost-btn">Load into form</button>
-      <button data-del-bundle="${b.id}" class="icon-btn">Delete</button>
-    </div>`,
-    )
-    .join("");
-
-  ordersRoot.innerHTML = state.orders.length
-    ? state.orders
-        .map(
-          (o) => `<div class="stack-row stack-col"><strong>${o.id}</strong><span>${new Date(o.date).toLocaleString()} • ${o.status}</span></div>`,
-        )
-        .join("")
-    : `<p class="subtle">No transactions yet.</p>`;
-
-  prodRoot.querySelectorAll("button[data-del-product]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const st = getState();
-      const id = Number(btn.dataset.delProduct);
-      st.products = st.products.filter((p) => p.id !== id);
-      st.bundles = st.bundles.map((b) => ({ ...b, items: b.items.filter((itemId) => itemId !== id) }));
-      saveState(st);
+  pRoot.querySelectorAll("[data-del-product]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const s = getState();
+      const id = Number(b.dataset.delProduct);
+      s.products = s.products.filter((p) => p.id !== id);
+      s.bundles = s.bundles.map((x) => ({ ...x, items: x.items.filter((i) => i !== id) }));
+      saveState(s);
       renderAdminLists();
-      toast("Product deleted");
-    });
-  });
+    }),
+  );
 
-  bundleRoot.querySelectorAll("button[data-del-bundle]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const st = getState();
-      st.bundles = st.bundles.filter((b) => b.id !== Number(btn.dataset.delBundle));
-      saveState(st);
+  bRoot.querySelectorAll("[data-del-bundle]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const s = getState();
+      s.bundles = s.bundles.filter((x) => x.id !== Number(b.dataset.delBundle));
+      saveState(s);
       renderAdminLists();
-      toast("Bundle deleted");
-    });
-  });
+    }),
+  );
 
-  bundleRoot.querySelectorAll("button[data-fill-bundle]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const st = getState();
-      const b = st.bundles.find((x) => x.id === Number(btn.dataset.fillBundle));
-      if (!b) return;
+  bRoot.querySelectorAll("[data-fill-bundle]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const s = getState();
+      const item = s.bundles.find((x) => x.id === Number(b.dataset.fillBundle));
+      if (!item) return;
       const form = $("#bundleForm");
-      form.bundleId.value = b.id;
-      form.name.value = b.name;
-      form.discount.value = b.discount;
-      form.image.value = b.image;
-      form.productIds.value = b.items.join(",");
-      toast("Bundle loaded into form");
-    });
-  });
+      form.bundleId.value = item.id;
+      form.name.value = item.name;
+      form.discount.value = item.discount;
+      form.image.value = item.image;
+      form.productIds.value = item.items.join(",");
+    }),
+  );
 }
 
 if (page === "shop") runShop();
