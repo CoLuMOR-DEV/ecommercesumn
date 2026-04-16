@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
-export function CheckoutAnimation({ active, onDone }) {
+export function CheckoutAnimation({ active, onDone, processingLabel = 'Processing payment...' }) {
   const [stage, setStage] = useState('idle');
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function CheckoutAnimation({ active, onDone }) {
                   transition={{ repeat: Infinity, duration: 1.1, ease: 'linear' }}
                   className="mx-auto h-12 w-12 rounded-full border-4 border-[#32455c] border-t-[#ff4655]"
                 />
-                <p className="mt-5 text-sm uppercase tracking-[0.2em] text-[#ece8e1]">Processing Purchase...</p>
+                <p className="mt-5 text-sm uppercase tracking-[0.2em] text-[#ece8e1]">{processingLabel}</p>
               </>
             ) : (
               <>
@@ -55,7 +55,7 @@ export function CheckoutAnimation({ active, onDone }) {
                 >
                   <span className="text-2xl font-black text-white">✓</span>
                 </motion.div>
-                <p className="mt-5 text-sm uppercase tracking-[0.2em] text-[#ece8e1]">Purchase Successful</p>
+                <p className="mt-5 text-sm uppercase tracking-[0.2em] text-[#ece8e1]">Payment Successful</p>
               </>
             )}
           </motion.div>

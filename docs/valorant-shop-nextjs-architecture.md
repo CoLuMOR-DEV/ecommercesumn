@@ -1,86 +1,74 @@
-# Valorant In-Game Shop Replica (Next.js + MySQL) Architecture
+# Valorant In-Game Shop Replica (Hybrid Upgrade + Top-Up Flow)
 
-## Project Structure (Vercel-ready)
+## 1) Vercel-Deployable Next.js Architecture
 
 ```txt
 .
 ├─ app/
-│  ├─ (shop)/page.jsx                 # Store page (featured + daily offers)
-│  ├─ top-up/page.jsx                 # VP recharge page
-│  ├─ admin/page.jsx                  # Protected admin login + transactions table
-│  ├─ layout.jsx                      # global shell and metadata
-│  └─ globals.css                     # Tailwind theme tokens and Valorant palette
+│  ├─ page.jsx                          # Main shop: featured + daily offers
+│  ├─ top-up/page.jsx                   # Context-aware VP packages
+│  ├─ admin/page.jsx                    # Hardcoded login + transaction table
+│  ├─ inspect/[skinId]/page.jsx         # Optional deep-link inspect route
+│  ├─ layout.jsx
+│  └─ globals.css
 ├─ components/
-│  ├─ ShopLayout.jsx
-│  ├─ VPTopUpCard.jsx
-│  ├─ CheckoutAnimation.jsx
-│  └─ InspectModal.jsx                # gun inspect modal w/ high-res assets
-├─ pages/
-│  └─ api/
-│     └─ checkout.js                  # calls ProcessFakeCheckout stored procedure
+│  ├─ MainShopGridLayout.jsx
+│  ├─ GunInspectLevelModal.jsx
+│  ├─ ContextAwareTopUpGrid.jsx
+│  └─ CheckoutAnimation.jsx
 ├─ lib/
-│  ├─ db.js                           # MySQL pool
-│  ├─ valorantApi.js                  # unofficial Valorant API fetch helpers
-│  └─ auth.js                         # hardcoded admin session helpers
+│  ├─ db.js
+│  ├─ shopState.js                      # reducer/context for Inspect -> Top-Up state
+│  └─ valorantApi.js                    # unofficial Valorant API wrappers
+├─ pages/api/
+│  ├─ purchase.js                       # CALL ProcessUpgradePurchase
+│  ├─ topup.js                          # fake top-up write + tx log
+│  └─ admin/transactions.js             # hardcoded-protected read for logs
 └─ database/
    └─ init.sql
 ```
 
-## Core Frontend Flow
+## 2) Hybrid State-Driven Flow (Core Requirement)
 
-1. `ShopLayout` renders `featuredBundle` + `dailyItems` in a strict dark/geometric UI.
-2. Clicking any item opens Inspect modal (not included here) with high-res API images.
-3. Buy action triggers `/api/checkout`, then `CheckoutAnimation` shows a 2-second processing state followed by success.
-4. VP wallet updates optimistically then revalidates from backend response.
+1. Main shop renders Holo Meridian featured banner + 4 daily cards.
+2. Clicking a skin opens `GunInspectLevelModal`.
+3. User picks Level 4 (locked by default if unlocked level is 1).
+4. Modal computes required VP and sends route state to `/top-up`:
 
-## API Contracts
-
-### POST `/api/checkout`
-
-Request:
-
-```json
+```ts
 {
-  "userId": 2,
-  "itemId": 5,
-  "vpCost": 1775
+  skinId: 'holo-meridian-operator',
+  skinName: 'Holo Meridian Operator',
+  targetLevel: 4,
+  requiredVp: 1200
 }
 ```
 
-Success response:
+5. Top-up page computes deficit (`requiredVp - currentVp`) and highlights the smallest package covering it.
+6. Fake payment runs animated checkout (`CheckoutAnimation`), then `POST /api/purchase` upgrades level.
 
-```json
-{
-  "success": true,
-  "status": "SUCCESS",
-  "message": "Purchase completed.",
-  "remainingVp": 3575
-}
-```
+## 3) Admin Route Protection (Simple)
 
-Failure response:
-
-```json
-{
-  "success": false,
-  "status": "FAILED",
-  "message": "Insufficient VP balance.",
-  "remainingVp": 200
-}
-```
-
-## Admin Protection (simple/hardcoded)
-
-- Keep credentials in env vars:
+- Hardcoded demo credentials in env:
   - `ADMIN_USERNAME=admin`
   - `ADMIN_PASSWORD=admin123`
-- Validate credentials on `/api/admin/login`.
-- Store a signed cookie (`httpOnly`) for `/admin` gatekeeping.
-- `/admin` page fetches `/api/admin/transactions` and renders all transaction rows.
+- On successful login set httpOnly cookie token.
+- `/admin` page validates cookie and fetches `transactions` rows.
 
-## Animation Guidance (Framer Motion)
+## 4) Production MySQL Strategy for Vercel
 
-- Use `AnimatePresence` for inspect modal enter/exit.
-- Use spring settings close to Valorant feel:
-  - `type: "spring"`, `stiffness: 240`, `damping: 18`.
-- Keep background transitions under 350ms with subtle glow accents (`#ff4655`).
+### Option A: PlanetScale
+- Use connection string with TLS and a pooled URL.
+- Prefer `mysql2` with low serverless connection count.
+- Run schema migrations through branch workflow.
+
+### Option B: Aiven MySQL
+- Create dedicated DB + restricted IP/user.
+- Enforce SSL CA cert.
+- Use pooled proxy endpoint to avoid cold-start connection storms.
+
+### Shared Recommendations
+- Keep stored routines in migration scripts under version control.
+- Add read/write split only if traffic warrants.
+- Use Vercel env vars:
+  - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.

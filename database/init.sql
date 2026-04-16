@@ -1,154 +1,212 @@
--- Valorant Shop Replica (MySQL 8+, XAMPP/phpMyAdmin compatible)
-CREATE DATABASE IF NOT EXISTS valorant_shop_replica;
-USE valorant_shop_replica;
+-- Valorant Hybrid Shop Replica Schema (XAMPP/phpMyAdmin)
+CREATE DATABASE IF NOT EXISTS valorant_hybrid_shop;
+USE valorant_hybrid_shop;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS transactions;
-DROP TABLE IF EXISTS shop_items;
+DROP TABLE IF EXISTS owned_skins;
+DROP TABLE IF EXISTS skin_upgrade_costs;
 DROP TABLE IF EXISTS users;
 SET FOREIGN_KEY_CHECKS = 1;
 
--- 1) USERS: player wallet and auth seed
+-- Users wallet
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
+  username VARCHAR(60) NOT NULL UNIQUE,
   vp_balance INT NOT NULL DEFAULT 0,
-  role ENUM('player', 'admin') NOT NULL DEFAULT 'player',
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- 2) SHOP ITEMS: mirrors Valorant offers fetched from unofficial Valorant API
-CREATE TABLE shop_items (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  item_uuid VARCHAR(64) NOT NULL UNIQUE,
-  item_name VARCHAR(120) NOT NULL,
-  item_type ENUM('skin', 'bundle', 'vp_pack') NOT NULL DEFAULT 'skin',
-  weapon_name VARCHAR(80) NULL,
-  tier_name VARCHAR(50) NULL,
-  image_url VARCHAR(500) NULL,
-  chroma_image_url VARCHAR(500) NULL,
-  icon_url VARCHAR(500) NULL,
+-- Cost table used by CalculateUpgradeCost for each target level
+CREATE TABLE skin_upgrade_costs (
+  skin_id VARCHAR(80) NOT NULL,
+  target_level TINYINT NOT NULL,
   vp_cost INT NOT NULL,
-  is_featured TINYINT(1) NOT NULL DEFAULT 0,
-  active TINYINT(1) NOT NULL DEFAULT 1,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  PRIMARY KEY (skin_id, target_level)
 ) ENGINE=InnoDB;
 
--- 3) TRANSACTIONS: fake checkouts for admin panel audit
+-- Tracks highest unlocked level per user/skin
+CREATE TABLE owned_skins (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  skin_id VARCHAR(80) NOT NULL,
+  level_unlocked TINYINT NOT NULL DEFAULT 1,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_skin (user_id, skin_id),
+  CONSTRAINT fk_owned_skins_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Purchase log (top-up + upgrade + failures)
 CREATE TABLE transactions (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  item_id INT NOT NULL,
+  skin_id VARCHAR(80) NULL,
+  action_type ENUM('UPGRADE_PURCHASE', 'TOP_UP', 'FAILED_UPGRADE') NOT NULL,
+  level_purchased TINYINT NULL,
   vp_cost INT NOT NULL,
-  status ENUM('SUCCESS', 'FAILED') NOT NULL DEFAULT 'SUCCESS',
-  failure_reason VARCHAR(255) NULL,
+  status ENUM('SUCCESS', 'FAILED') NOT NULL,
+  detail VARCHAR(255) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_transactions_user FOREIGN KEY (user_id) REFERENCES users(id),
-  CONSTRAINT fk_transactions_item FOREIGN KEY (item_id) REFERENCES shop_items(id)
+  CONSTRAINT fk_transactions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Seed users
-INSERT INTO users (username, password_hash, vp_balance, role) VALUES
-('admin', '$2y$10$hardcodedDemoHashReplaceInProd', 999999, 'admin'),
-('demo_player', '$2y$10$hardcodedDemoHashReplaceInProd', 5350, 'player');
+-- Seed: users
+INSERT INTO users (username, vp_balance) VALUES
+('demo_player', 1200),
+('admin', 999999);
 
--- Seed shop items
-INSERT INTO shop_items (
-  item_uuid, item_name, item_type, weapon_name, tier_name,
-  image_url, chroma_image_url, icon_url, vp_cost, is_featured
-) VALUES
-('bundle-rgx-2026', 'RGX 11z Pro Bundle', 'bundle', NULL, 'Exclusive',
- 'https://media.valorant-api.com/bundles/rgx-bundle/displayicon.png',
- 'https://media.valorant-api.com/bundles/rgx-bundle/displayicon2.png',
- 'https://media.valorant-api.com/bundles/rgx-bundle/displayiconsmall.png',
- 8700, 1),
-('skin-reaver-vandal', 'Reaver Vandal', 'skin', 'Vandal', 'Premium',
- 'https://media.valorant-api.com/weaponskins/reaver-vandal/displayicon.png',
- 'https://media.valorant-api.com/weaponskins/reaver-vandal/chromadisplayicon.png',
- 'https://media.valorant-api.com/weaponskins/reaver-vandal/displayicon.png',
- 1775, 0),
-('skin-prime-phantom', 'Prime Phantom', 'skin', 'Phantom', 'Premium',
- 'https://media.valorant-api.com/weaponskins/prime-phantom/displayicon.png',
- 'https://media.valorant-api.com/weaponskins/prime-phantom/chromadisplayicon.png',
- 'https://media.valorant-api.com/weaponskins/prime-phantom/displayicon.png',
- 1775, 0);
+-- Seed: Holo Meridian Operator upgrade ladder
+-- Incremental model (L1->L2, L2->L3, L3->L4)
+INSERT INTO skin_upgrade_costs (skin_id, target_level, vp_cost) VALUES
+('holo-meridian-operator', 2, 300),
+('holo-meridian-operator', 3, 400),
+('holo-meridian-operator', 4, 500),
+('reaver-vandal', 2, 300),
+('reaver-vandal', 3, 400),
+('reaver-vandal', 4, 500);
 
--- Stored Function: CheckUserVP(user_id, required_vp)
--- Returns 1 if enough VP, otherwise 0
-DROP FUNCTION IF EXISTS CheckUserVP;
+-- Seed ownership (default Level 1 unlocked)
+INSERT INTO owned_skins (user_id, skin_id, level_unlocked) VALUES
+(1, 'holo-meridian-operator', 1),
+(1, 'reaver-vandal', 1);
+
+-- Function: CheckTotalVP(user)
+DROP FUNCTION IF EXISTS CheckTotalVP;
 DELIMITER $$
-CREATE FUNCTION CheckUserVP(p_user_id INT, p_required_vp INT)
-RETURNS TINYINT
+CREATE FUNCTION CheckTotalVP(p_user_id INT)
+RETURNS INT
 READS SQL DATA
 DETERMINISTIC
 BEGIN
-  DECLARE v_balance INT DEFAULT 0;
+  DECLARE v_vp INT;
 
   SELECT vp_balance
-    INTO v_balance
+    INTO v_vp
   FROM users
   WHERE id = p_user_id
   LIMIT 1;
 
-  IF v_balance IS NULL THEN
-    RETURN 0;
-  END IF;
-
-  IF v_balance >= p_required_vp THEN
-    RETURN 1;
-  END IF;
-
-  RETURN 0;
+  RETURN IFNULL(v_vp, 0);
 END $$
 DELIMITER ;
 
--- Stored Procedure: ProcessFakeCheckout(user_id, item_id, vp_cost)
--- Deducts VP when available and logs every attempt in transactions
-DROP PROCEDURE IF EXISTS ProcessFakeCheckout;
+-- Function: CalculateUpgradeCost(user, skin, target level)
+-- Sum incremental costs for levels above current unlocked up to target.
+DROP FUNCTION IF EXISTS CalculateUpgradeCost;
 DELIMITER $$
-CREATE PROCEDURE ProcessFakeCheckout(
+CREATE FUNCTION CalculateUpgradeCost(
+  p_user_id INT,
+  p_skin_id VARCHAR(80),
+  p_target_level TINYINT
+)
+RETURNS INT
+READS SQL DATA
+DETERMINISTIC
+BEGIN
+  DECLARE v_current_level TINYINT DEFAULT 1;
+  DECLARE v_total_cost INT DEFAULT 0;
+
+  SELECT IFNULL(level_unlocked, 1)
+    INTO v_current_level
+  FROM owned_skins
+  WHERE user_id = p_user_id
+    AND skin_id = p_skin_id
+  LIMIT 1;
+
+  IF p_target_level <= v_current_level THEN
+    RETURN 0;
+  END IF;
+
+  SELECT IFNULL(SUM(vp_cost), 0)
+    INTO v_total_cost
+  FROM skin_upgrade_costs
+  WHERE skin_id = p_skin_id
+    AND target_level > v_current_level
+    AND target_level <= p_target_level;
+
+  RETURN v_total_cost;
+END $$
+DELIMITER ;
+
+-- Procedure: ProcessUpgradePurchase(user, skin, level, vp_cost)
+DROP PROCEDURE IF EXISTS ProcessUpgradePurchase;
+DELIMITER $$
+CREATE PROCEDURE ProcessUpgradePurchase(
   IN p_user_id INT,
-  IN p_item_id INT,
+  IN p_skin_id VARCHAR(80),
+  IN p_level TINYINT,
   IN p_vp_cost INT
 )
-proc_main: BEGIN
-  DECLARE v_has_vp TINYINT DEFAULT 0;
+main: BEGIN
+  DECLARE v_current_vp INT DEFAULT 0;
+  DECLARE v_expected_cost INT DEFAULT 0;
+
+  IF p_level < 2 OR p_level > 4 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid target level. Allowed range is 2-4.';
+  END IF;
 
   START TRANSACTION;
 
-  -- Row lock for safe concurrent deductions
-  SELECT CheckUserVP(p_user_id, p_vp_cost)
-    INTO v_has_vp
+  SELECT vp_balance
+    INTO v_current_vp
   FROM users
   WHERE id = p_user_id
   FOR UPDATE;
 
-  IF v_has_vp = 1 THEN
-    UPDATE users
-      SET vp_balance = vp_balance - p_vp_cost
-    WHERE id = p_user_id;
-
-    INSERT INTO transactions (user_id, item_id, vp_cost, status)
-    VALUES (p_user_id, p_item_id, p_vp_cost, 'SUCCESS');
-
-    COMMIT;
-
-    SELECT 'SUCCESS' AS checkout_status,
-           'Purchase completed.' AS message,
-           (SELECT vp_balance FROM users WHERE id = p_user_id) AS remaining_vp;
-  ELSE
-    INSERT INTO transactions (user_id, item_id, vp_cost, status, failure_reason)
-    VALUES (p_user_id, p_item_id, p_vp_cost, 'FAILED', 'Insufficient VP balance');
-
-    COMMIT;
-
-    SELECT 'FAILED' AS checkout_status,
-           'Insufficient VP balance.' AS message,
-           (SELECT vp_balance FROM users WHERE id = p_user_id) AS remaining_vp;
+  IF v_current_vp IS NULL THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User not found.';
   END IF;
+
+  -- lock ownership row and ensure baseline Level 1 row exists
+  INSERT INTO owned_skins (user_id, skin_id, level_unlocked)
+  VALUES (p_user_id, p_skin_id, 1)
+  ON DUPLICATE KEY UPDATE level_unlocked = level_unlocked;
+
+  SELECT CalculateUpgradeCost(p_user_id, p_skin_id, p_level)
+    INTO v_expected_cost;
+
+  IF p_vp_cost <> v_expected_cost THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Client vp_cost mismatch with calculated upgrade cost.';
+  END IF;
+
+  IF v_expected_cost <= 0 THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Requested level is already unlocked.';
+  END IF;
+
+  IF v_current_vp < v_expected_cost THEN
+    INSERT INTO transactions (user_id, skin_id, action_type, level_purchased, vp_cost, status, detail)
+    VALUES (p_user_id, p_skin_id, 'FAILED_UPGRADE', p_level, v_expected_cost, 'FAILED', 'Insufficient VP');
+
+    COMMIT;
+
+    SELECT 'FAILED' AS status,
+           'Insufficient VP balance.' AS message,
+           CheckTotalVP(p_user_id) AS remaining_vp,
+           v_expected_cost AS required_vp;
+    LEAVE main;
+  END IF;
+
+  UPDATE users
+  SET vp_balance = vp_balance - v_expected_cost
+  WHERE id = p_user_id;
+
+  UPDATE owned_skins
+  SET level_unlocked = GREATEST(level_unlocked, p_level)
+  WHERE user_id = p_user_id
+    AND skin_id = p_skin_id;
+
+  INSERT INTO transactions (user_id, skin_id, action_type, level_purchased, vp_cost, status, detail)
+  VALUES (p_user_id, p_skin_id, 'UPGRADE_PURCHASE', p_level, v_expected_cost, 'SUCCESS', 'Upgrade unlocked');
+
+  COMMIT;
+
+  SELECT 'SUCCESS' AS status,
+         'Upgrade unlocked successfully.' AS message,
+         CheckTotalVP(p_user_id) AS remaining_vp,
+         v_expected_cost AS charged_vp;
 END $$
 DELIMITER ;
