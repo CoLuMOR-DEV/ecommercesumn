@@ -1,21 +1,26 @@
 # Night Market — Valorant-Inspired Shop
 
-A polished storefront inspired by Valorant’s in-game store, featuring:
+A storefront inspired by Valorant’s in-game shop with:
 
-- Featured bundle hero with item list + live bundle timer
-- Daily offers with live rotation timer
-- Bundle/Shop refresh controls available to all players (500 VP each)
-- Top Up and Checkout as separate panels
-- Inspect experience with upgrades + video previews
-- Purchase-complete presentation screen
-- Admin panel for products, bundles, and rotation settings
+- Featured bundle section + daily rotation with live timers
+- Exact configured bundle sets:
+  - Holo Meridian
+  - Blackthorn
+  - Jellybeam
+  - SilkLeaf
+  - Kuronami 2.0
+- Expanded skin pool across rifles, pistols, SMGs, LMGs, snipers, and melees
+- Separate Top Up and Checkout panels
+- Inspect flow with upgrade/video preview and bundle item list
+- Purchase-complete screen
+- Persistent local order history + readable admin order dropdown details
 - Vercel-compatible static deployment
 
 ## Wallet defaults
 
-- Starting VP balance: `0`
-- Shop refresh cost: `500 VP`
-- Bundle refresh cost: `500 VP`
+- Starting VP: `0`
+- Shop refresh: `500 VP`
+- Bundle refresh: `500 VP`
 
 ## Admin Access
 
@@ -34,4 +39,4 @@ Open:
 
 ## Database
 
-`database/init.sql` includes seeded skins, bundles, upgrades, rotation mappings, configurable VP refresh costs, and stored logic (`fn_bundle_price`, `sp_rotate_shop_items`) for backend migration.
+`database/init.sql` contains schema + seeded shop data + bundled content + stored logic (`fn_bundle_price`, `sp_rotate_shop_items`) for backend migration.

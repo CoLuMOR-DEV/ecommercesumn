@@ -105,14 +105,16 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 INSERT INTO products(name, category, price_vp, image_url, rarity)
 VALUES
-('Xenohunter Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/94c085e6-48e1-c879-2552-88bf7850c5a8/displayicon.png', 'PREMIUM'),
-('Neptune Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/a67c2daa-4f4d-1af0-0ff4-6fafde471776/displayicon.png', 'PREMIUM'),
-('Glitchpop Odin', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/97af88e4-4176-9fa3-4a26-57919443dab7/displayicon.png', 'ULTRA'),
-('Neo Frontier Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/bd647d56-4542-19cd-e1ed-4fb429c78cf9/displayicon.png', 'PREMIUM'),
-('Sentinels of Light Odin', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/67fb338a-4b21-ed70-7c2a-46bef4742b4f/displayicon.png', 'ULTRA'),
-('Reaver Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/8dda01a6-4237-f430-ac70-c3ba677963e9/displayicon.png', 'PREMIUM'),
-('Sovereign Odin', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/a7995818-409f-c79b-20b7-28ad642f3135/displayicon.png', 'PREMIUM'),
-('Evori Dreamwings Odin', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/fa1c05fd-49fc-ad93-17d8-f0aaf11874cd/displayicon.png', 'ULTRA');
+('Holo Meridian Vandal', 'SKIN', 2175, 'https://media.valorant-api.com/weaponskins/e06fd704-4171-b5ea-5028-d3befb62107d/displayicon.png', 'ULTRA'),
+('Holo Meridian Operator', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/bbf8ffb9-49c0-75c0-cc7d-8f8f03a4bd36/displayicon.png', 'PREMIUM'),
+('Holo Meridian Sheriff', 'SKIN', 1275, 'https://media.valorant-api.com/weaponskins/19b997bb-461a-fa85-250d-a8b0b8908fea/displayicon.png', 'PREMIUM'),
+('Holo Meridian Judge', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/309743ac-4288-11dc-d563-88844caa2c4d/displayicon.png', 'PREMIUM'),
+('Holo Flare Melee', 'SKIN', 4350, 'https://media.valorant-api.com/weaponskins/ff4bc096-4e6c-b67a-296a-5e814e4c0274/displayicon.png', 'EXCLUSIVE'),
+('Blackthorn Vandal', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/4f1823dd-4a17-7511-6ac8-4aa28a6a263a/displayicon.png', 'PREMIUM'),
+('Blackthorn Guardian', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/4047a667-4d1d-bb68-df9e-a09bfa68d934/displayicon.png', 'PREMIUM'),
+('Blackthorn Marshal', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/7c47be9b-48a5-752e-7229-f7b1668239dd/displayicon.png', 'PREMIUM'),
+('Blackthorn Judge', 'SKIN', 1775, 'https://media.valorant-api.com/weaponskins/309743ac-4288-11dc-d563-88844caa2c4d/displayicon.png', 'PREMIUM'),
+('Blackthorn Melee', 'SKIN', 4350, 'https://media.valorant-api.com/weaponskins/e37229ed-4ddf-5e7e-e744-8fba60fa2c37/displayicon.png', 'EXCLUSIVE');
 
 INSERT INTO skin_upgrades(product_id, upgrade_name, video_url, sort_order)
 VALUES
@@ -123,15 +125,19 @@ VALUES
 
 INSERT INTO bundles(name, description, discount_percent, image_url)
 VALUES
-('Abyssal Depths', 'Premium deep-sea themed Odin lineup.', 20.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt5c94f47ca632a0f6/67a7be16f9679130d4ffbe74/1920x1080_V25A2_Act2_Battlepass.jpg'),
-('Celestial Judgment', 'High-tier light infused collection.', 18.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blta2ff0fe34b2fd5e6/67f7eb009f852f26510f3fd4/vct25-stage1-article-cover.png'),
-('Sovereign Circuit', 'Classic sovereign and dreamwings mix.', 15.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blteee4855ce9cb8807/66ec6afdee4e8d390ce05ddf/1920x1080_v25A1_Act1_Competitive_MapPool.png');
+('Holo Meridian', 'Vandal, Operator, Sheriff, Judge, Holo Flare Melee', 20.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt5c94f47ca632a0f6/67a7be16f9679130d4ffbe74/1920x1080_V25A2_Act2_Battlepass.jpg'),
+('Blackthorn', 'Vandal, Guardian, Marshal, Judge, Blackthorn Melee', 18.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blta2ff0fe34b2fd5e6/67f7eb009f852f26510f3fd4/vct25-stage1-article-cover.png'),
+('Jellybeam', 'Classic, Bulldog, Marshal, Operator, Jellybeam Melee', 16.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blteee4855ce9cb8807/66ec6afdee4e8d390ce05ddf/1920x1080_v25A1_Act1_Competitive_MapPool.png'),
+('SilkLeaf', 'Phantom, Stinger, Ares, Shorty, SilkLeaf Melee', 17.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blte4f865f3af8b0833/66ec6afde9a8f20dd4def4f4/1920x1080_v25A1_Act1_Battlepass.png'),
+('Kuronami 2.0', 'Phantom, Operator, Guardian, Ghost, Narukami Melee', 20.00, 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt9948ca8e7c5fd42e/66ff2f8de8f8b96d7f4be293/1920x1080_v25A2_Act2_Kuronami.png');
 
 INSERT INTO bundle_items(bundle_id, product_id)
 VALUES
-(1,1),(1,2),(1,3),(1,4),
-(2,3),(2,5),(2,6),
-(3,2),(3,7),(3,8);
+(1,1),(1,2),(1,3),(1,4),(1,5),
+(2,6),(2,7),(2,8),(2,9),(2,10),
+(3,3),(3,7),(3,8),(3,2),(3,10),
+(4,6),(4,7),(4,8),(4,3),(4,10),
+(5,6),(5,2),(5,7),(5,3),(5,10);
 
 INSERT INTO app_settings(setting_key, setting_value)
 VALUES

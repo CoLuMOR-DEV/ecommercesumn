@@ -363,7 +363,21 @@ function renderAdminLists() {
 
   pRoot.innerHTML = st.products.map((p) => `<div class="stack-row"><span>#${p.id} ${p.name} — ${vp(p.price)}</span><button class="icon-btn" data-del-product="${p.id}">Delete</button></div>`).join("");
   bRoot.innerHTML = st.bundles.map((b) => `<div class="stack-row stack-col"><strong>#${b.id} ${b.name}</strong><span>${b.items.length} items • ${b.discount}%</span><button class="ghost-btn" data-fill-bundle="${b.id}">Load into form</button><button class="icon-btn" data-del-bundle="${b.id}">Delete</button></div>`).join("");
-  oRoot.innerHTML = st.orders.length ? st.orders.map((o) => `<div class="stack-row stack-col"><strong>${o.id}</strong><span>${new Date(o.date).toLocaleString()} • ${o.status}</span></div>`).join("") : `<p class="subtle">No transactions yet.</p>`;
+  oRoot.innerHTML = st.orders.length
+    ? st.orders
+        .map(
+          (o) => `<details class="stack-row stack-col">
+            <summary><strong>${o.id}</strong> • ${new Date(o.date).toLocaleString()} • ${o.status}</summary>
+            <div class="order-details">
+              <p>Type: ${o.type}</p>
+              <p>Payment: ${o.paymentMethod ?? "-"}</p>
+              <p>Total: ${o.total ? vp(o.total) : o.amount ? vp(o.amount) : "-"}</p>
+              ${o.items ? `<ul>${o.items.map((i) => `<li>${i.name} — ${vp(i.price)}</li>`).join("")}</ul>` : ""}
+            </div>
+          </details>`,
+        )
+        .join("")
+    : `<p class="subtle">No transactions yet.</p>`;
 
   pRoot.querySelectorAll("[data-del-product]").forEach((b) =>
     b.addEventListener("click", () => {
